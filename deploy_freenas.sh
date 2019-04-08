@@ -1,0 +1,100 @@
+#!/usr/bin/env sh
+
+DEBUG=3
+
+
+
+_locate() {
+  fname=$1
+  shift
+  for dir in $*; do
+    dir=$(cd ${dir} 2>/dev/null && pwd)
+    if [ -r "${dir}/${fname}" ]; then echo "${dir}/${fname}"; exit; fi
+  done
+}
+
+
+
+WDIR=$(cd `dirname $0` && pwd)
+
+FETCH=$(which fetch 2>/dev/null)
+CURL=$(which curl 2>/dev/null)
+WGET=$(which wget 2>/dev/null)
+
+IS_OPNSENSE=$([ -d "/usr/local/opnsense/" ] && echo 1)
+
+# Locate acme.sh and load it as a library
+ACME=$(_locate acme.sh /root/.acme.sh /usr/local/sbin "$WDIR")
+
+if [ -z "$ACME" ] || [ `find "$ACME" -mtime +30` ]; then
+  if [ ! -z "$FETCH" ]; then
+    "$FETCH" https://raw.githubusercontent.com/Neilpang/acme.sh/master/acme.sh
+  elif [ ! -z "$CURL" ]; then
+    "$CURL" -O https://raw.githubusercontent.com/Neilpang/acme.sh/master/acme.sh
+  elif [ ! -z "$WGET" ]; then
+    "$WGET" https://raw.githubusercontent.com/Neilpang/acme.sh/master/acme.sh
+  fi
+  ACME=$(_locate acme.sh "$WDIR")
+fi
+if [ -z "$ACME" ]; then echo "ERROR: Can't locate acme.sh"; exit 1; fi
+
+if [ "$IS_OPNSENSE" == "1" ]; then
+  LE_WORKING_DIR="$WDIR"
+else
+  LE_WORKING_DIR=`dirname $ACME`
+fi
+
+. "$ACME" >/dev/null
+
+
+
+_parse_ini() {
+	inFile="$1"
+	prefix="${2:-ini}"
+
+	if [ ! -f "$inFile" ]; then _err "File $inFile not found!"; exit 1; fi
+
+	local IFS="="
+	echo "[]" | cat "$inFile" - | sed 's/\t/ /g;s/^ +//;s/ +$//;/^#/d;/^$/d' | while read name value; do
+    name=${name/ /}
+		[ -z "$name" ] && continue
+
+		local IFS=" "
+		if [ "${name:0:1}" == "[" ]; then
+			section=${name/'['/}
+			section=${section/']'/}
+		else
+      value=${value/# /}
+      value=${value/% /}
+      value=${value/#\"/}
+      value=${value/%\"/}
+
+      value=${value//\"/\\\"}
+      echo "${prefix}__${section}__${name}=\"${value}\""
+		fi
+		local IFS="="
+	done
+}
+
+
+
+# Parse configuration file
+CONFIG=$(_locate deploy_config ${WDIR}/../.. ${WDIR})
+
+if [ -z "$CONFIG" ]; then _err "ERROR: Can't locate deploy_config!"; exit 1; fi
+
+eval $(_parse_ini ${CONFIG})
+
+if [ -z "${ini__deploy__password}" ]; then _err "ERROR: Root password not defined!"; exit 1; fi
+
+DOMAIN_NAME=${ini__deploy__cert_fqdn:-$(hostname)}
+export FREENAS_PASSWORD=${ini__deploy__password}
+export FREENAS_HOST="${ini__deploy__protocol:-"http://"}${ini__deploy__connect_host:-"localhost"}:${ini__deploy__port:-"80"}"
+export FREENAS_VERIFY=${ini__deploy__verify:-"true"}
+
+_debug DOMAIN_NAME ${DOMAIN_NAME}
+_debug FREENAS_PASSWORD ${FREENAS_PASSWORD}
+_debug FREENAS_HOST ${FREENAS_HOST}
+_debug FREENAS_VERIFY ${FREENAS_VERIFY}
+
+_deploy ${DOMAIN_NAME} "freenas"
