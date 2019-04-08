@@ -55,21 +55,15 @@ _parse_ini() {
 	if [ ! -f "$inFile" ]; then _err "File $inFile not found!"; exit 1; fi
 
 	local IFS="="
-	echo "[]" | cat "$inFile" - | sed 's/\t/ /g;s/^ +//;s/ +$//;/^#/d;/^$/d' | while read name value; do
-    name=${name/ /}
+	echo "[]" | cat "$inFile" - | sed 's/\\t/ /g;s/^ +//;s/ +$//;/^#/d;/^$/d' | while read name value; do
+    name=$(echo ${name} | sed 's/ *$//')
 		[ -z "$name" ] && continue
 
 		local IFS=" "
-		if [ "${name:0:1}" == "[" ]; then
-			section=${name/'['/}
-			section=${section/']'/}
+		if [ $(echo ${name} | cut -c 1-1) == "[" ]; then
+      section=$(echo ${name} | sed 's/\[//;s/\]//')
 		else
-      value=${value/# /}
-      value=${value/% /}
-      value=${value/#\"/}
-      value=${value/%\"/}
-
-      value=${value//\"/\\\"}
+      value=$(echo ${value} | sed 's/[#%][ "]//;s/"/\\"/')
       echo "${prefix}__${section}__${name}=\"${value}\""
 		fi
 		local IFS="="

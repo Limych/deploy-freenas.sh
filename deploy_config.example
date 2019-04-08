@@ -17,7 +17,7 @@ password = YourSuperSecurePassword#@#$*
 # verify sets whether the script will attempt to verify the server's certificate with a HTTPS
 # connection.  Set to true if you're using a HTTPS connection to a remote host.  If connect_host
 # is set to localhost (or is unset), set to false.  Default is false.
-# verify = false
+# verify = true
 
 # privkey_path is the path to the certificate private key on your system.  Default
 # assumes you're using acme.sh:
