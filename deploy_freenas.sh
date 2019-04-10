@@ -72,9 +72,9 @@ _parse_ini() {
 
 
 # Parse configuration file
-CONFIG=$(_locate deploy_config ${WDIR}/../.. ${WDIR})
+CONFIG="${WDIR}/deploy_config"
 
-if [ -z "$CONFIG" ]; then _err "ERROR: Can't locate deploy_config!"; exit 1; fi
+if [ -r "$CONFIG" ]; then _err "ERROR: Can't load deploy_config!"; exit 1; fi
 
 eval $(_parse_ini ${CONFIG})
 
