@@ -7,6 +7,10 @@ This project was remade from project deploy-freenas.py by danb35 due to the impo
 # Installation
 This script can run on any machine running Bourne shell (all *nix systems, macOS; for Windows you need to install additional package, like [CygWin](https://www.cygwin.com/)) that has network access to your FreeNAS server, but in most cases it's best to run it directly on the FreeNAS box.  Change to a convenient directory and run `git clone https://github.com/Limych/deploy-freenas`
 
+<p align="center">* * *</p>
+I put a lot of work into making this repo available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
+<p align="center"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=UAGFL5L6M8RN2&item_name=[deploy-freenas]+Donation+for+a+big+barrel+of+coffee+:)&currency_code=EUR&source=url"><img alt="Buy Me a Coffe" src="https://raw.githubusercontent.com/Limych/HomeAssistantConfiguration/master/docs/images/donate-with-paypal.png"></a></p>
+
 # Usage
 
 There are now two ways to usage of this script:
