@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-DEBUG=3
-
 
 
 _locate() {
@@ -26,7 +24,7 @@ IS_OPNSENSE=$([ -d "/usr/local/opnsense/" ] && echo 1)
 # Locate acme.sh and load it as a library
 ACME=$(_locate acme.sh /root/.acme.sh /usr/local/sbin "$WDIR")
 
-if [ -z "$ACME" ] || [ `find "$ACME" -mtime +30` ]; then
+if [ -z "$ACME" ] || [ ! -z "$(find "$WDIR/acme.sh" -mtime +30 2>/dev/null)" ]; then
   if [ ! -z "$FETCH" ]; then
     "$FETCH" https://raw.githubusercontent.com/Neilpang/acme.sh/master/acme.sh
   elif [ ! -z "$CURL" ]; then
@@ -39,7 +37,8 @@ fi
 if [ -z "$ACME" ]; then echo "ERROR: Can't locate acme.sh"; exit 1; fi
 
 if [ "$IS_OPNSENSE" == "1" ]; then
-  LE_WORKING_DIR="$WDIR"
+  LE_WORKING_DIR="/var/etc/acme-client/home"
+  _SCRIPT_HOME="$WDIR"
 else
   LE_WORKING_DIR=`dirname $ACME`
 fi
@@ -82,13 +81,19 @@ eval $(_parse_ini ${CONFIG})
 if [ -z "${ini__deploy__password}" ]; then _err "ERROR: Root password not defined!"; exit 1; fi
 
 DOMAIN_NAME=${ini__deploy__cert_fqdn:-$(hostname)}
+CERT_KEY_PATH=${ini__deploy__privkey_path:-"/root/.acme.sh/${DOMAIN_NAME}/${DOMAIN_NAME}.key"}
+CERT_FULLCHAIN_PATH=${ini__deploy__fullchain_path:-"/root/.acme.sh/${DOMAIN_NAME}/fullchain.cer"}
 export FREENAS_PASSWORD=${ini__deploy__password}
 export FREENAS_HOST="${ini__deploy__protocol:-"http://"}${ini__deploy__connect_host:-"localhost"}:${ini__deploy__port:-"80"}"
 export FREENAS_VERIFY=${ini__deploy__verify:-"true"}
 
-_debug DOMAIN_NAME ${DOMAIN_NAME}
-_debug FREENAS_PASSWORD ${FREENAS_PASSWORD}
-_debug FREENAS_HOST ${FREENAS_HOST}
-_debug FREENAS_VERIFY ${FREENAS_VERIFY}
+_debug DOMAIN_NAME "$DOMAIN_NAME"
+_debug CERT_KEY_PATH "$CERT_KEY_PATH"
+_debug CERT_FULLCHAIN_PATH "$CERT_FULLCHAIN_PATH"
+_debug FREENAS_PASSWORD "$FREENAS_PASSWORD"
+_debug FREENAS_HOST "$FREENAS_HOST"
+_debug FREENAS_VERIFY "$FREENAS_VERIFY"
 
-_deploy ${DOMAIN_NAME} "freenas"
+. "$WDIR/deploy/freenas.sh"
+
+freenas_deploy "$DOMAIN_NAME" "$CERT_KEY_PATH" "" "" "$CERT_FULLCHAIN_PATH"
