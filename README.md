@@ -44,6 +44,6 @@ Install deployer to existing acme.sh installation by `install2acme.sh` script.
 Then you can deploy certificates like with other [deploy hooks](https://github.com/Neilpang/acme.sh/wiki/deployhooks):
 ```bash
 export FREENAS_PASSWORD="xxxxxxx"   # Required
-export FREENAS_HOST="http://localhost:80"   # Optional
+export FREENAS_HOST="https://example.com:443"   # Optional. Default: "http://localhost:80"
 acme.sh --deploy -d example.com --deploy-hook freenas
 ```
